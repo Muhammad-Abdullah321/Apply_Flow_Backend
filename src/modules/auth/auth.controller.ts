@@ -3,13 +3,13 @@ import * as authServices from "./auth.service.js";
 import { statusCodes,Message,errorCodes } from "../../constants/response.constants.js";
 
 export const register = async (req: Request, res: Response) => {
-  const result = await authServices.registerUser(req, res);
+  const result = await authServices.registerUser(req);
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
   );
 };
 
@@ -18,9 +18,9 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
   );
 };
 
@@ -29,9 +29,31 @@ export const login = async (req: Request, res: Response) => {
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
+  );
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  const result = await authServices.forgotPassword(req);
+
+  return successResponse(
+    res,
+    result.statusCode,
+    result.message,
+    result.data
+  );
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  const result = await authServices.resetPassword(req);
+
+  return successResponse(
+    res,
+    result.statusCode,
+    result.message,
+    result.data
   );
 };
 
@@ -40,9 +62,10 @@ export const logout = async (req: Request, res: Response) => {
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
+    
   );
 };
 
