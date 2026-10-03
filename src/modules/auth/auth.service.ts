@@ -37,7 +37,7 @@ export const registerUser = async (
 ) => {
   const data = registerSchema.parse(req.body);
 
-  const existingUser = await (prisma as any).user.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: {
       email: data.email,
     },
@@ -55,7 +55,7 @@ if (existingUser) {
   const otp = generateOtp();
   const hashedOtp = await bcrypt.hash(otp, 10);
 
-  const user = await (prisma as any).user.create({
+  const user = await prisma.user.create({
     data: {
       name: data.name,
       email: data.email,
@@ -68,7 +68,7 @@ if (existingUser) {
   try {
     await sendEmailOtp(otp, data.email);
   } catch (error) {
-    await (prisma as any).user.delete({
+    await prisma.user.delete({
       where: { id: user.id },
     });
     throw error;
@@ -86,7 +86,7 @@ export const verifyEmail = async (
 ) => {
   const data = verifyOtpSchema.parse(req.body);
 
-  const user = await (prisma as any).user.findUnique({
+  const user = await prisma.user.findUnique({
     where: {
       email: data.email,
     },
@@ -124,7 +124,7 @@ export const verifyEmail = async (
     );
   }
 
-  await (prisma as any).user.update({
+  await prisma.user.update({
     where: {
       id: user.id,
     },
@@ -146,7 +146,7 @@ export const loginUser = async (
 ) => {
   const data = loginSchema.parse(req.body);
 
-  const user = await (prisma as any).user.findUnique({
+  const user = await prisma.user.findUnique({
     where: {
       email: data.email,
     },
@@ -184,7 +184,7 @@ export const loginUser = async (
   const token = generateToken(user.id);
 
   res.cookie("token", token, {
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
