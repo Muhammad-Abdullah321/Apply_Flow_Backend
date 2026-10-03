@@ -16,6 +16,8 @@ model User{
   otpCode         String?
   otpExpiresAt    DateTime?
   registrationExpiresAt  DateTime?
+  resetPasswordOtp          String?
+ resetPasswordOtpExpiresAt DateTime?
 
   createdAt DateTime @default(now())
   updateAt DateTime @default(now())
