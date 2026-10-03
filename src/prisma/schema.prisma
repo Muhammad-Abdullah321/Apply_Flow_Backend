@@ -15,6 +15,8 @@ model User{
   isEmailVerified Boolean  @default(false)
   otpCode         String?
   otpExpiresAt    DateTime?
+  registrationExpiresAt  DateTime?
+
   createdAt DateTime @default(now())
   updateAt DateTime @default(now())
 }

@@ -7,9 +7,9 @@ export const register = async (req: Request, res: Response) => {
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
   );
 };
 
@@ -29,9 +29,9 @@ export const login = async (req: Request, res: Response) => {
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
   );
 };
 
@@ -40,9 +40,10 @@ export const logout = async (req: Request, res: Response) => {
 
   return successResponse(
     res,
-    "statusCode" in result && typeof result.statusCode === "number" ? result.statusCode : statusCodes.ok,
+    result.statusCode,
     result.message,
-    "data" in result ? result.data : undefined
+    result.data
+    
   );
 };
 
