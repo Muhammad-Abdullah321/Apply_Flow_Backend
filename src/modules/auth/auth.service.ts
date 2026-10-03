@@ -19,22 +19,27 @@ import { statusCodes, Message, errorCodes } from "../../constants/response.const
 
 import customErrors from "../../utils/exception.utils.js";
 
+import { env } from "../../config/dotenv.config.js";
+
 const generateOtp = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
 const generateToken = (userId: string): string => {
+  const jwtSecret = env.jwtSecret;
+
+  if (!jwtSecret) {
+    throw new Error("JWT secret is not configured");
+  }
+
   return jwt.sign(
     { userId },
-    process.env.JWT_SECRET!,
-    { expiresIn: "7d" }
+    jwtSecret,
+    { expiresIn: env.jwtExpiresIn as jwt.SignOptions["expiresIn"] }
   );
 };
 
-export const registerUser = async (
-  req: Request,
-  _res: Response
-) => {
+export const registerUser = async (req: Request) => {
   const data = registerSchema.parse(req.body);
 
   const existingUser = await prisma.user.findUnique({
@@ -42,14 +47,68 @@ export const registerUser = async (
       email: data.email,
     },
   });
-if (existingUser) {
-    throw new customErrors(
-      statusCodes.conflict,
-      Message.emailAlreadyRegistered,
-      errorCodes.emailAlreadyRegistered
-    );
+
+  /*
+   * Existing user handling
+   */
+  if (existingUser) {
+    // User is already fully registered
+    if (existingUser.isEmailVerified) {
+      throw new customErrors(
+        statusCodes.conflict,
+        Message.emailAlreadyRegistered,
+        errorCodes.emailAlreadyRegistered
+      );
+    }
+
+    // User is unverified
+    const registrationExpired =
+      existingUser.registrationExpiresAt &&
+      existingUser.registrationExpiresAt <= new Date();
+
+    // Unverified registration expired after 1 hour
+    if (registrationExpired) {
+      await prisma.user.delete({
+        where: {
+          id: existingUser.id,
+        },
+      });
+    } else {
+      // Still within 1-hour registration window
+      // Generate a new OTP
+      const otp = generateOtp();
+      const hashedOtp = await bcrypt.hash(otp, 10);
+
+      await prisma.user.update({
+        where: {
+          id: existingUser.id,
+        },
+        data: {
+          name: data.name,
+          password: await bcrypt.hash(data.password, 10),
+          otpCode: hashedOtp,
+          otpExpiresAt: new Date(
+            Date.now() + 10 * 60 * 1000
+          ),
+        },
+      });
+
+      try {
+        await sendEmailOtp(otp, data.email);
+      } catch (error) {
+        throw error;
+      }
+
+      return {
+        statusCode: statusCodes.ok,
+        message: "A new OTP has been sent to your email.",
+      };
+    }
   }
 
+  /*
+   * Create new user
+   */
   const hashedPassword = await bcrypt.hash(data.password, 10);
 
   const otp = generateOtp();
@@ -61,7 +120,12 @@ if (existingUser) {
       email: data.email,
       password: hashedPassword,
       otpCode: hashedOtp,
-      otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
+      otpExpiresAt: new Date(
+        Date.now() + 10 * 60 * 1000
+      ),
+      registrationExpiresAt: new Date(
+        Date.now() + 1 * 60 * 60 * 1000
+      ),
     },
   });
 
@@ -69,14 +133,20 @@ if (existingUser) {
     await sendEmailOtp(otp, data.email);
   } catch (error) {
     await prisma.user.delete({
-      where: { id: user.id },
+      where: {
+        id: user.id,
+      },
     });
+
     throw error;
   }
 
   return {
+    statusCode: statusCodes.created,
     message: "Registration successful. Verify your email with OTP.",
-    userId: user.id,
+    data: {
+      userId: user.id,
+    },
   };
 };
 
@@ -136,7 +206,10 @@ export const verifyEmail = async (
   });
 
   return {
+    statusCode: statusCodes.ok,
     message: "Email verified successfully",
+    data:{userId: user.id, email: user.email}
+
   };
 };
 
@@ -191,6 +264,7 @@ export const loginUser = async (
   });
 
 return {
+  statusCode: statusCodes.ok,
   message: Message.loginSuccessfully,
   data: {
     user: {
@@ -203,10 +277,29 @@ return {
 };
 
 export const logoutUser = async (
-  _req: Request,
-  _res: Response
+  req: Request,
+  res: Response
 ) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    throw new customErrors(
+      statusCodes.notFound,
+      Message.userNotFound,
+      errorCodes.userNotFound
+    );
+  }
+  res.clearCookie("token", {
+    httpOnly: false,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+  })
   return {
-    message: "Logout successful",
+    statusCode: statusCodes.ok,
+    message: Message.logoutSuccessfully,
+    data: {
+      message: "User logged out successfully",
+    },
+    
   };
 };
