@@ -8,15 +8,35 @@ datasource db {
 }
 
 model User{
+
+//authentication
   id        String @id @default(uuid())
   name      String
   email     String @unique
   password  String
+
+  //Email verification
   isEmailVerified Boolean  @default(false)
   otpCode         String?
   otpExpiresAt    DateTime?
   registrationExpiresAt  DateTime?
 
+   //password forget and reset
+  resetPasswordOtp          String?
+  resetPasswordOtpExpiresAt DateTime?
+
+   // Profile
+  phone       String?
+  address     String?
+  city        String?
+  country     String?
+  linkedinUrl String?
+  githubUrl   String?
+  bio         String?
+
   createdAt DateTime @default(now())
   updateAt DateTime @default(now())
+
+   
+
 }

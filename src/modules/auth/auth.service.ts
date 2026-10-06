@@ -13,6 +13,8 @@ import {
   registerSchema,
   verifyOtpSchema,
   loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from "./auth.schema.js";
 
 import { statusCodes, Message, errorCodes } from "../../constants/response.constants.js";
@@ -63,8 +65,7 @@ export const registerUser = async (req: Request) => {
 
     // User is unverified
     const registrationExpired =
-      existingUser.registrationExpiresAt &&
-      existingUser.registrationExpiresAt <= new Date();
+      existingUser.createdAt <= new Date(Date.now() - 60 * 60 * 1000);
 
     // Unverified registration expired after 1 hour
     if (registrationExpired) {
@@ -122,9 +123,6 @@ export const registerUser = async (req: Request) => {
       otpCode: hashedOtp,
       otpExpiresAt: new Date(
         Date.now() + 10 * 60 * 1000
-      ),
-      registrationExpiresAt: new Date(
-        Date.now() + 1 * 60 * 60 * 1000
       ),
     },
   });
@@ -274,6 +272,116 @@ return {
     },
   },
 };
+};
+
+export const forgotPassword = async (req: Request) => {
+  const data = forgotPasswordSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
+
+  if (!user) {
+    throw new customErrors(
+      statusCodes.notFound,
+      Message.userNotFound,
+      errorCodes.userNotFound
+    );
+  }
+
+  if (!user.isEmailVerified) {
+    throw new customErrors(
+      statusCodes.unauthorized,
+      Message.emailNotVerified,
+      errorCodes.emailNotVerified
+    );
+  }
+
+  const otp = generateOtp();
+  const hashedOtp = await bcrypt.hash(otp, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetPasswordOtp: hashedOtp,
+      resetPasswordOtpExpiresAt: new Date(
+        Date.now() + 10 * 60 * 1000
+      ),
+    },
+  });
+
+  await sendEmailOtp(otp, user.email);
+
+  return {
+    statusCode: statusCodes.ok,
+    message: "Password reset OTP has been sent to your email.",
+    data: {}
+  };
+};
+
+export const resetPassword = async (req: Request) => {
+  const data = resetPasswordSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
+
+  if (!user) {
+    throw new customErrors(
+      statusCodes.notFound,
+      Message.userNotFound,
+      errorCodes.userNotFound
+    );
+  }
+
+  if (
+    !user.resetPasswordOtp ||
+    !user.resetPasswordOtpExpiresAt
+  ) {
+    throw new customErrors(
+      statusCodes.badRequest,
+      Message.invalidOtp,
+      errorCodes.invalidOtp
+    );
+  }
+
+  if (user.resetPasswordOtpExpiresAt < new Date()) {
+    throw new customErrors(
+      statusCodes.badRequest,
+      Message.invalidOtp,
+      errorCodes.invalidOtp
+    );
+  }
+
+  const otpMatches = await bcrypt.compare(
+    data.otp,
+    user.resetPasswordOtp
+  );
+
+  if (!otpMatches) {
+    throw new customErrors(
+      statusCodes.badRequest,
+      Message.invalidOtp,
+      errorCodes.invalidOtp
+    );
+  }
+
+  const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPassword,
+      resetPasswordOtp: null,
+      resetPasswordOtpExpiresAt: null,
+    },
+  });
+
+  return {
+    statusCode: statusCodes.ok,
+    message: "Password reset successfully.",
+    data: {}
+  };
 };
 
 export const logoutUser = async (
