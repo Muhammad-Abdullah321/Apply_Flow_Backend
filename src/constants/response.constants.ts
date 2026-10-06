@@ -41,6 +41,10 @@ export const Message = Object.freeze({
   wrongPassword: "Wrong Password",
 
   serverError: "Internal Server Error",
+
+  profileFetched: "Profile Fetched Successfully",
+  profileUpdated: "Profile Updated Successfully",
+  accountDeleted: "Account Deleted Successfully",
 });
 
 export const errorCodes = Object.freeze({
