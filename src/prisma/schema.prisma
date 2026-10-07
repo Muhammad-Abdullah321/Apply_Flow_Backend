@@ -7,6 +7,26 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum jobType {
+FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+  TEMPORARY
+}
+
+enum applicationStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  GHOSTED
+  WITHDRAWN
+}
+
+
 model User{
 
 //authentication
@@ -34,9 +54,63 @@ model User{
   githubUrl   String?
   bio         String?
 
+ resumes Resume[]
+ application Application[]
+
   createdAt DateTime @default(now())
   updateAt DateTime @default(now())
 
    
 
+}
+
+//Application model
+
+model Application {
+  id String  @id @default(uuid())
+
+  userId String
+  user User @relation(fields:[userId], references:[id])
+
+  company String
+  jobTitle String
+
+  jobURL String?
+  location String?
+  jobType jobType
+  applicationDate DateTime
+  status applicationStatus
+
+  minSalary Decimal?
+  maxSalary Decimal?
+  currency String?
+
+  jobDescription String?
+  Notes String?
+
+  resumeId String?
+  resume  Resume? @relation(fields: [resumeId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+}
+
+//Resume Model
+model Resume {
+  id String @id @default(uuid())
+
+  userId String
+  user   User @relation(fields: [userId], references: [id])
+
+  name     String
+  fileName String
+  fileType String
+  fileUrl  String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
 }
