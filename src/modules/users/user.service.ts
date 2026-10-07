@@ -32,7 +32,7 @@ export const getMyProfile = async (req: Request) => {
       bio: true,
       isEmailVerified: true,
       createdAt: true,
-      updatedAt: true,
+      updateAt: true,
     },
   });
 
@@ -96,7 +96,7 @@ export const updateMyProfile = async (req: Request) => {
       bio: true,
       isEmailVerified: true,
       createdAt: true,
-      updatedAt: true,
+      updateAt: true,
     },
   });
 
@@ -141,5 +141,6 @@ export const deleteMyAccount = async (req: Request) => {
   return {
     statusCode: statusCodes.ok,
     message: Message.accountDeleted,
+    data: {}
   };
 };
