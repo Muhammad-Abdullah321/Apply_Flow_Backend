@@ -8,7 +8,7 @@ datasource db {
 }
 
 enum jobType {
-FULL_TIME
+  FULL_TIME
   PART_TIME
   CONTRACT
   INTERNSHIP
@@ -26,26 +26,24 @@ enum applicationStatus {
   WITHDRAWN
 }
 
-
-model User{
-
-//authentication
-  id        String @id @default(uuid())
-  name      String
-  email     String @unique
-  password  String
+model User {
+  //authentication
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
 
   //Email verification
-  isEmailVerified Boolean  @default(false)
-  otpCode         String?
-  otpExpiresAt    DateTime?
-  registrationExpiresAt  DateTime?
+  isEmailVerified       Boolean   @default(false)
+  otpCode               String?
+  otpExpiresAt          DateTime?
+  registrationExpiresAt DateTime?
 
-   //password forget and reset
+  //password forget and reset
   resetPasswordOtp          String?
   resetPasswordOtpExpiresAt DateTime?
 
-   // Profile
+  // Profile
   phone       String?
   address     String?
   city        String?
@@ -54,47 +52,43 @@ model User{
   githubUrl   String?
   bio         String?
 
- resumes Resume[]
- application Application[]
+  resumes     Resume[]
+  application Application[]
 
   createdAt DateTime @default(now())
-  updateAt DateTime @default(now())
-
-   
-
+  updateAt  DateTime @default(now())
 }
 
 //Application model
 
 model Application {
-  id String  @id @default(uuid())
+  id String @id @default(uuid())
 
   userId String
-  user User @relation(fields:[userId], references:[id])
+  user   User   @relation(fields: [userId], references: [id])
 
-  company String
+  company  String
   jobTitle String
 
-  jobURL String?
-  location String?
-  jobType jobType
+  jobURL          String?
+  location        String?
+  jobType         jobType
   applicationDate DateTime
-  status applicationStatus
+  status          applicationStatus
+  statusHistory   ApplicationStatusHistory[]
 
   minSalary Decimal?
   maxSalary Decimal?
-  currency String?
+  currency  String?
 
   jobDescription String?
-  Notes String?
+  Notes          String?
 
   resumeId String?
-  resume  Resume? @relation(fields: [resumeId], references: [id])
-  
+  resume   Resume? @relation(fields: [resumeId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-
 }
 
 //Resume Model
@@ -102,7 +96,7 @@ model Resume {
   id String @id @default(uuid())
 
   userId String
-  user   User @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 
   name     String
   fileName String
@@ -113,4 +107,15 @@ model Resume {
   updatedAt DateTime @updatedAt
 
   applications Application[]
+}
+
+model ApplicationStatusHistory {
+  id String @id @default(uuid())
+
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  status applicationStatus
+
+  createdAt DateTime @default(now())
 }
