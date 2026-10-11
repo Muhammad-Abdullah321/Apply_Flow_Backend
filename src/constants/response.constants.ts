@@ -39,8 +39,12 @@ export const Message = Object.freeze({
   invalidEmail: "Invalid Email",
 
   wrongPassword: "Wrong Password",
+  resumeNotFound: "RESUME_NOT_FOUND",
 
   serverError: "Internal Server Error",
+  badRequest: "BAD_REQUEST",
+  unauthorized: "UNAUTHORIZED",
+  applicationNotFound: "APPLICATION_NOT_FOUND",
 
   profileFetched: "Profile Fetched Successfully",
   profileUpdated: "Profile Updated Successfully",
@@ -50,6 +54,7 @@ export const Message = Object.freeze({
 export const errorCodes = Object.freeze({
   badRequest: "BAD_REQUEST",
   invalidInput: "INVALID_INPUT",
+  resumeNotFound: "RESUME_NOT_FOUND",
 
   unauthorized: "UNAUTHORIZED",
   forbidden: "FORBIDDEN",
@@ -68,4 +73,5 @@ export const errorCodes = Object.freeze({
 
   databaseError: "DATABASE_ERROR",
   serverError: "SERVER_ERROR",
+  applicationNotFound: "APPLICATION_NOT_FOUND",
 });
