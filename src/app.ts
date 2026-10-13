@@ -9,7 +9,12 @@ import applicationRoutes from "./modules/applications/application.router.js";
 
 const app = express();
 
-app.use(cors());
+// CORS configuration for frontend integration
+app.use(cors({
+  origin: "http://localhost:5173", // Frontend development server
+  credentials: true, // Allow cookies and credentials
+}));
+
 app.use(cookieParser());
 app.use(express.json());
 

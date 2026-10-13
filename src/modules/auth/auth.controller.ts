@@ -24,8 +24,30 @@ export const verifyOtp = async (req: Request, res: Response) => {
   );
 };
 
+export const resendOtp = async (req: Request, res: Response) => {
+  const result = await authServices.resendOtp(req);
+
+  return successResponse(
+    res,
+    result.statusCode,
+    result.message,
+    result.data
+  );
+};
+
 export const login = async (req: Request, res: Response) => {
   const result = await authServices.loginUser(req, res);
+
+  return successResponse(
+    res,
+    result.statusCode,
+    result.message,
+    result.data
+  );
+};
+
+export const me = async (req: Request, res: Response) => {
+  const result = await authServices.getCurrentUser(req, res);
 
   return successResponse(
     res,
