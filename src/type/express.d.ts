@@ -5,6 +5,7 @@ declare global {
     interface Request {
       user: JwtPayload & {
         userId: string;
+        role?: 'USER' | 'ADMIN';
       };
     }
   }

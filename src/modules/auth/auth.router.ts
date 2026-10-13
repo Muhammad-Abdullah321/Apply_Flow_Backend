@@ -12,12 +12,13 @@ import {
 
 const router = Router();
 
+// Auth routes
 router.post("/register", register);
 router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
 router.get("/me", me);
-router.post("/forgotPassword", forgotPassword);
-router.post("/resetPassword", resetPassword);
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
 router.post("/logout", logout);
 router.post("/resend-otp", resendOtp);
 
