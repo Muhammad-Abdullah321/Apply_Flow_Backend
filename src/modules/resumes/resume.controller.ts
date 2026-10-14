@@ -17,7 +17,11 @@ export class ResumeController {
 
       const result = await this.resumeService.listResumes(userId!, Number(page), Number(limit));
 
-      res.status(200).json({ message: 'Resumes fetched successfully', data: result });
+      res.status(200).json({
+        message: 'Resumes fetched successfully',
+        data: result.resumes,
+        pagination: result.pagination,
+      });
     } catch (error) {
       this.handleError(error, res, next);
     }
