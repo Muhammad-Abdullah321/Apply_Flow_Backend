@@ -100,6 +100,11 @@ export const applicationFiltersSchema = z.object({
 export const applicationIdParamsSchema = z.object({
   id: z.string().uuid(),
 });
+
+export const addNoteSchema = z.object({
+  note: z.string().min(1, "Note cannot be empty").max(1000, "Note must be less than 1000 characters").trim(),
+});
+
 export type CreateApplicationInput = z.infer<
   typeof createApplicationSchema
 >;
@@ -108,4 +113,7 @@ export type UpdateApplicationInput = z.infer<
 >;
 export type UpdateApplicationStatusInput = z.infer<
   typeof updateApplicationStatusSchema
+>;
+export type AddNoteInput = z.infer<
+  typeof addNoteSchema
 >;
