@@ -103,10 +103,12 @@ model Resume {
   fileType String
   fileUrl  String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   applications Application[]
+
+  @@index([userId])
 }
 
 model ApplicationStatusHistory {
@@ -118,4 +120,16 @@ model ApplicationStatusHistory {
   status applicationStatus
 
   createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  userId    String?
+  key       String
+  value     String
+  type      String   // 'user' | 'system'
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, key])
+  @@unique([userId, key, type])
 }
