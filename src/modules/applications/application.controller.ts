@@ -51,6 +51,14 @@ export const updateApplicationStatus = async (
   return successResponse(res, result.statusCode, result.message, result.data);
 };
 
+export const addNote = async (
+  req: Request,
+  res: Response
+) => {
+  const result = await applicationServices.addNote(req);
+  return successResponse(res, result.statusCode, result.message, result.data);
+};
+
 function successResponse(
   res: Response<any, Record<string, any>>,
   statusCode: number,

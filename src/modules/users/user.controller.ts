@@ -32,6 +32,16 @@ export const deleteMyAccount = async (req: Request, res: Response) => {
     )
 }
 
+export const changePassword = async (req: Request, res: Response) => {
+    const result = await userService.changePassword(req);
+    return successResponse(
+        res,
+        result.statusCode,
+        result.message,
+        result.data
+    )
+}
+
 function successResponse(
   res: Response<any, Record<string, any>>,
   statusCode: number,
@@ -43,4 +53,3 @@ function successResponse(
     ...(data !== undefined ? { data } : {}),
   });
 }
-
