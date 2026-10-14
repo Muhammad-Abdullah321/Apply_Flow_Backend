@@ -12,21 +12,8 @@ import {
   updateApplicationStatusSchema,
   applicationFiltersSchema,
   applicationIdParamsSchema,
+  addNoteSchema,
 } from "./application.schema.js";
-
-// const notFound = () =>
-//   new customErrors(
-//     statusCodes.notFound,
-//     Message.userNotFound,
-//     errorCodes.userNotFound
-//   );
-
-//   const badRequest = () =>
-//   new customErrors(
-//     statusCodes.badRequest,
-//     Message.badRequest,
-//     errorCodes.badRequest
-//   );
 
 const verifyResumeOwnership = async (
   resumeId: string | null | undefined,
@@ -283,6 +270,41 @@ export const updateApplicationStatus = async (req: Request) => {
   return {
     statusCode: statusCodes.ok,
     message: "Application status updated successfully",
+    data: application,
+  };
+};
+
+export const addNote = async (req: Request) => {
+  const userId = req.user.userId;
+  const id = req.params.id as string;
+  const data = addNoteSchema.parse(req.body);
+  const { note } = data;
+
+  const existing = await prisma.application.findFirst({
+    where: { id, userId },
+    select: { id: true, Notes: true },
+  });
+
+  if (!existing) throw new customErrors(
+    statusCodes.notFound,
+    Message.applicationNotFound,
+    errorCodes.applicationNotFound
+  );
+
+  const updatedNotes = note.trim();
+
+  const application = await prisma.application.update({
+    where: { id },
+    data: { Notes: updatedNotes },
+    include: {
+      resume: true,
+      statusHistory: { orderBy: { createdAt: "desc" } },
+    },
+  });
+
+  return {
+    statusCode: statusCodes.ok,
+    message: "Note added to application successfully",
     data: application,
   };
 };
