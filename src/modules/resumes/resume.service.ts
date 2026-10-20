@@ -1,7 +1,11 @@
 import path from 'path';
 import { Resume } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+<<<<<<< HEAD
 import { AppException } from '../settings/common/exceptions/app.exception.js';
+=======
+import CustomError from '../../utils/exception.utils.js';
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
 
 export class ResumeService {
   async listResumes(userId: string, page: number = 1, limit: number = 10): Promise<any> {
@@ -36,7 +40,11 @@ export class ResumeService {
     });
 
     if (!resume) {
+<<<<<<< HEAD
       throw new AppException('Resume not found', 404);
+=======
+      throw new CustomError(404, 'Resume not found');
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
     }
 
     return resume;
@@ -44,7 +52,11 @@ export class ResumeService {
 
   async createResume(userId: string, input: any): Promise<Resume> {
     const filename = input.generatedFileName;
+<<<<<<< HEAD
     const fileUrl = `/uploads/${filename}`;
+=======
+    const fileUrl = `/uploads/resumes/${filename}`;
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
 
     try {
       return await prisma.resume.create({
@@ -57,7 +69,11 @@ export class ResumeService {
         },
       });
     } catch {
+<<<<<<< HEAD
       const filePath = path.join('uploads', filename);
+=======
+      const filePath = path.join('uploads', 'resumes', filename);
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
       try {
         const fs = await import('fs');
         if (fs.existsSync(filePath)) {
@@ -66,7 +82,11 @@ export class ResumeService {
       } catch {
         // Ignore cleanup errors
       }
+<<<<<<< HEAD
       throw new AppException('Failed to save resume', 500);
+=======
+      throw new CustomError(500, 'Failed to save resume');
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
     }
   }
 
@@ -76,7 +96,11 @@ export class ResumeService {
     });
 
     if (!existing) {
+<<<<<<< HEAD
       throw new AppException('Resume not found', 404);
+=======
+      throw new CustomError(404, 'Resume not found');
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
     }
 
     return prisma.resume.update({
@@ -91,7 +115,11 @@ export class ResumeService {
     });
 
     if (!resume) {
+<<<<<<< HEAD
       throw new AppException('Resume not found', 404);
+=======
+      throw new CustomError(404, 'Resume not found');
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
     }
 
     await prisma.resume.delete({ where: { id: resumeId } });
@@ -99,7 +127,11 @@ export class ResumeService {
     const filename = resume.fileUrl.split('/').pop();
     if (filename) {
       const fs = await import('fs');
+<<<<<<< HEAD
       const filePath = path.join('uploads', filename);
+=======
+      const filePath = path.join('uploads', 'resumes', filename);
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
-import { AppException } from '../settings/common/exceptions/app.exception.js';
+import CustomError from '../../utils/exception.utils.js';
 import { dashboardQuerySchema } from './dashboard.schema.js';
 import { DashboardService } from './dashboard.service.js';
 
@@ -16,7 +16,7 @@ export class DashboardController {
       const userId = req.user?.userId;
 
       if (!userId) {
-        throw new AppException('Unauthorized: user not authenticated', 401);
+        throw new CustomError(401, 'Unauthorized: user not authenticated');
       }
 
       const validatedQuery = dashboardQuerySchema.parse(req.query);

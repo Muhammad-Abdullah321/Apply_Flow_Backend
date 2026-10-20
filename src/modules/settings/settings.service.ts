@@ -1,5 +1,9 @@
 import { prisma } from '../../lib/prisma.js';
+<<<<<<< HEAD
 import { AppException } from './common/exceptions/app.exception.js';
+=======
+import CustomError from '../../utils/exception.utils.js';
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
 
 export class SettingsService {
   async getAllSettings(userId: string, isAdmin: boolean): Promise<any> {
@@ -27,7 +31,11 @@ export class SettingsService {
       return { key, value: systemSettings[key] };
     }
 
+<<<<<<< HEAD
     throw new AppException('Setting not found', 404);
+=======
+    throw new CustomError(404, 'Setting not found');
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
   }
 
   async patchUserSettings(userId: string, updates: any): Promise<any> {

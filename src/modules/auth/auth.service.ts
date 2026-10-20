@@ -50,11 +50,7 @@ export const registerUser = async (req: Request) => {
     },
   });
 
-  /*
-   * Existing user handling
-   */
   if (existingUser) {
-    // User is already fully registered
     if (existingUser.isEmailVerified) {
       throw new customErrors(
         statusCodes.conflict,
@@ -63,11 +59,9 @@ export const registerUser = async (req: Request) => {
       );
     }
 
-    // User is unverified
     const registrationExpired =
       existingUser.createdAt <= new Date(Date.now() - 60 * 60 * 1000);
 
-    // Unverified registration expired after 1 hour
     if (registrationExpired) {
       await prisma.user.delete({
         where: {
@@ -75,8 +69,6 @@ export const registerUser = async (req: Request) => {
         },
       });
     } else {
-      // Still within 1-hour registration window
-      // Generate a new OTP
       const otp = generateOtp();
       const hashedOtp = await bcrypt.hash(otp, 10);
 
@@ -88,9 +80,7 @@ export const registerUser = async (req: Request) => {
           name: data.name,
           password: await bcrypt.hash(data.password, 10),
           otpCode: hashedOtp,
-          otpExpiresAt: new Date(
-            Date.now() + 10 * 60 * 1000
-          ),
+          otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
         },
       });
 
@@ -107,9 +97,6 @@ export const registerUser = async (req: Request) => {
     }
   }
 
-  /*
-   * Create new user
-   */
   const hashedPassword = await bcrypt.hash(data.password, 10);
 
   const otp = generateOtp();
@@ -121,9 +108,7 @@ export const registerUser = async (req: Request) => {
       email: data.email,
       password: hashedPassword,
       otpCode: hashedOtp,
-      otpExpiresAt: new Date(
-        Date.now() + 10 * 60 * 1000
-      ),
+      otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
     },
   });
 
@@ -151,7 +136,7 @@ export const registerUser = async (req: Request) => {
 
 export const verifyEmail = async (
   req: Request,
-  _res: Response
+  res: Response
 ) => {
   const data = verifyOtpSchema.parse(req.body);
 
@@ -204,6 +189,15 @@ export const verifyEmail = async (
     },
   });
 
+  const token = generateToken(user.id);
+
+  res.cookie("token", token, {
+    httpOnly: false,
+    secure: false,
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
   return {
     statusCode: statusCodes.ok,
     message: "Email verified successfully",
@@ -213,6 +207,7 @@ export const verifyEmail = async (
         name: user.name,
         email: user.email,
       },
+      token,
     },
   };
 };
@@ -267,17 +262,18 @@ export const loginUser = async (
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
-return {
-  statusCode: statusCodes.ok,
-  message: Message.loginSuccessfully,
-  data: {
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
+  return {
+    statusCode: statusCodes.ok,
+    message: Message.loginSuccessfully,
+    data: {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+      token,
     },
-  },
-};
+  };
 };
 
 export const forgotPassword = async (req: Request) => {
@@ -417,7 +413,6 @@ export const logoutUser = async (
     data: {
       message: "User logged out successfully",
     },
-    
   };
 };
 

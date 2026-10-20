@@ -1,6 +1,6 @@
 import { Application } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { AppException } from '../settings/common/exceptions/app.exception.js';
+import CustomError from '../../utils/exception.utils.js';
 import type { DashboardQuery } from './dashboard.schema.js';
 
 interface DashboardDateRange {
@@ -50,13 +50,12 @@ export class DashboardService {
   async getDashboard(userId: string, query: DashboardQuery): Promise<DashboardData> {
     const period = query.period;
 
-    // Calculate date ranges
     const endDate = new Date();
     endDate.setHours(23, 59, 59, 999);
-    
+
     let startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
-    
+
     if (period === '7d') {
       startDate.setDate(startDate.getDate() - 7);
     } else if (period === '30d' || period === 'month') {
@@ -67,11 +66,10 @@ export class DashboardService {
 
     const weekAgo = new Date(endDate);
     weekAgo.setDate(endDate.getDate() - 7);
-    
+
     const monthAgo = new Date(endDate);
     monthAgo.setMonth(endDate.getMonth() - 1);
 
-    // Fetch all data in parallel
     const [totalApplications, pendingApplications, recentApplications, statusGroups, allApplications] = await Promise.all([
       prisma.application.count({ where: { userId } }),
       prisma.application.count({ where: { userId, status: { in: ['APPLIED', 'SCREENING', 'INTERVIEW'] } } }),
@@ -91,7 +89,6 @@ export class DashboardService {
       }),
     ]);
 
-    // Calculate summary stats
     const applicationsThisWeek = allApplications.filter(app => {
       const appDate = new Date(app.createdAt);
       return appDate >= weekAgo;
@@ -104,10 +101,9 @@ export class DashboardService {
 
     const rejectedCount = statusGroups.find(s => s.status === 'REJECTED')?._count.status || 0;
     const ghostedCount = statusGroups.find(s => s.status === 'GHOSTED')?._count.status || 0;
-    
-    // Calculate response rate (rejections + ghosted / total * 100)
+
     const rejectedAndGhosted = rejectedCount + ghostedCount;
-    const responseRate = totalApplications > 0 
+    const responseRate = totalApplications > 0
       ? Math.round((rejectedAndGhosted / totalApplications) * 100)
       : 0;
 
@@ -122,16 +118,14 @@ export class DashboardService {
       responseRate,
     };
 
-    // Format status distribution
     const statusDistribution: StatusDistributionItem[] = statusGroups.map(item => ({
       status: item.status,
       count: item._count.status,
-      percentage: totalApplications > 0 
+      percentage: totalApplications > 0
         ? Math.round((item._count.status / totalApplications) * 100)
         : 0,
     }));
 
-    // Format recent applications
     const recentApps: DashboardRecentApplication[] = recentApplications.map(app => ({
       id: app.id,
       jobTitle: app.jobTitle,
@@ -140,7 +134,6 @@ export class DashboardService {
       applicationDate: app.applicationDate.toISOString(),
     }));
 
-    // Build trend data
     const applicationTrend: ApplicationTrendPoint[] = this.buildTrendData(allApplications, startDate, endDate, period);
 
     return {
@@ -157,32 +150,30 @@ export class DashboardService {
 
   private buildTrendData(applications: any[], startDate: Date, endDate: Date, period: string): ApplicationTrendPoint[] {
     const trend: ApplicationTrendPoint[] = [];
-    
+
     if (period === 'month' || period === 'quarter') {
-      // Weekly buckets
       const days = period === 'month' ? 30 : 90;
       const weeks = Math.ceil(days / 7);
-      
+
       for (let i = 0; i < weeks; i++) {
         const date = new Date(endDate);
         date.setDate(endDate.getDate() - (i * 7));
-        
+
         trend.push({
           date: date.toISOString().split('T')[0],
-          count: 0, // Will be populated with actual data
+          count: 0,
         });
       }
     } else {
-      // Daily buckets
       const days = period === '7d' ? 7 : 30;
-      
+
       for (let i = 0; i < days; i++) {
         const date = new Date(endDate);
         date.setDate(endDate.getDate() - i);
-        
+
         trend.push({
           date: date.toISOString().split('T')[0],
-          count: 0, // Will be populated with actual data
+          count: 0,
         });
       }
     }

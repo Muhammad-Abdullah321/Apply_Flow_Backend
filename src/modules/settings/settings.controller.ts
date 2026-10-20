@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
+<<<<<<< HEAD
 import { AppException } from './common/exceptions/app.exception.js';
+=======
+import CustomError from '../../utils/exception.utils.js';
+>>>>>>> 9e93ce4 (feat: implement resume and settings modules with CRUD operations, update dashboard routes, and enhance user profile endpoints)
 import { SettingsService } from './settings.service.js';
 
 export class SettingsController {

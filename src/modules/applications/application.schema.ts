@@ -31,7 +31,7 @@ const fields = {
   maxSalary: z.coerce.number().nonnegative().nullable().optional(),
   currency: z.string().trim().length(3).nullable().optional(),
   jobDescription: z.string().nullable().optional(),
-  notes: z.string().nullable().optional(),
+  Notes: z.string().nullable().optional(),
   resumeId: z.string().uuid().nullable().optional(),
 };
 
@@ -63,7 +63,7 @@ export const updateApplicationSchema = z
     maxSalary: fields.maxSalary,
     currency: fields.currency,
     jobDescription: fields.jobDescription,
-    notes: fields.notes,
+    Notes: fields.Notes,
     resumeId: fields.resumeId,
   })
   .refine((data) => Object.keys(data).length > 0, {

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError } from 'zod';
-import { AppException } from '../settings/common/exceptions/app.exception.js';
+import CustomError from '../../utils/exception.utils.js';
 import { ResumeService } from './resume.service.js';
 
 export class ResumeController {
@@ -43,14 +43,14 @@ export class ResumeController {
   uploadResume = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.userId;
-      const { name } = req.body;
+      const { name } = req.body || {};
 
       if (!req.file) {
-        throw new AppException('No file uploaded', 400);
+        throw new CustomError(400, 'No file uploaded');
       }
 
       const resume = await this.resumeService.createResume(userId!, {
-        name: name || 'Resume',
+        name: name || req.file.originalname.replace(/\.[^/.]+$/, ''),
         originalFileName: req.file.originalname,
         generatedFileName: req.file.filename,
         mimeType: req.file.mimetype,
