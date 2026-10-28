@@ -7,18 +7,129 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User{
-  id        String @id @default(uuid())
-  name      String
-  email     String @unique
-  password  String
-  isEmailVerified Boolean  @default(false)
-  otpCode         String?
-  otpExpiresAt    DateTime?
-  registrationExpiresAt  DateTime?
+enum jobType {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  INTERNSHIP
+  FREELANCE
+  TEMPORARY
+}
+
+enum applicationStatus {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  OFFER
+  REJECTED
+  GHOSTED
+  WITHDRAWN
+}
+
+model User {
+  //authentication
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+
+  //Email verification
+  isEmailVerified       Boolean   @default(false)
+  otpCode               String?
+  otpExpiresAt          DateTime?
+  registrationExpiresAt DateTime?
+
+  //password forget and reset
   resetPasswordOtp          String?
- resetPasswordOtpExpiresAt DateTime?
+  resetPasswordOtpExpiresAt DateTime?
+
+  // Profile
+  phone       String?
+  address     String?
+  city        String?
+  country     String?
+  linkedinUrl String?
+  githubUrl   String?
+  bio         String?
+
+  resumes     Resume[] @relation(onDelete: Cascade)
+  application Application[] @relation(onDelete: Cascade)
 
   createdAt DateTime @default(now())
-  updateAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//Application model
+
+model Application {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  company  String
+  jobTitle String
+
+  jobURL          String?
+  location        String?
+  jobType         jobType
+  applicationDate DateTime
+  status          applicationStatus
+  statusHistory   ApplicationStatusHistory[]
+
+  minSalary Decimal?
+  maxSalary Decimal?
+  currency  String?
+
+  jobDescription String?
+  Notes          String?
+
+  resumeId String?
+  resume   Resume? @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//Resume Model
+model Resume {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  name     String
+  fileName String
+  fileType String
+  fileUrl  String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  applications Application[]
+
+  @@index([userId])
+}
+
+model ApplicationStatusHistory {
+  id String @id @default(uuid())
+
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  status applicationStatus
+
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  id        String   @id @default(uuid())
+  userId    String?
+  key       String
+  value     String
+  type      String   // 'user' | 'system'
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, key])
+  @@unique([userId, key, type])
 }

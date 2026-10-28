@@ -143,7 +143,8 @@ export const registerUser = async (req: Request) => {
     statusCode: statusCodes.created,
     message: "Registration successful. Verify your email with OTP.",
     data: {
-      userId: user.id,
+      email: data.email,
+      otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
     },
   };
 };
@@ -206,8 +207,13 @@ export const verifyEmail = async (
   return {
     statusCode: statusCodes.ok,
     message: "Email verified successfully",
-    data:{userId: user.id, email: user.email}
-
+    data: {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    },
   };
 };
 
@@ -256,7 +262,7 @@ export const loginUser = async (
 
   res.cookie("token", token, {
     httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -315,7 +321,10 @@ export const forgotPassword = async (req: Request) => {
   return {
     statusCode: statusCodes.ok,
     message: "Password reset OTP has been sent to your email.",
-    data: {}
+    data: {
+      email: user.email,
+      otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    },
   };
 };
 
@@ -399,7 +408,7 @@ export const logoutUser = async (
   }
   res.clearCookie("token", {
     httpOnly: false,
-    secure: process.env.NODE_ENV === "production",
+    secure: false,
     sameSite: "lax",
   })
   return {
@@ -409,5 +418,128 @@ export const logoutUser = async (
       message: "User logged out successfully",
     },
     
+  };
+};
+
+export const getCurrentUser = async (
+  req: Request,
+  res: Response
+) => {
+  const token = req.cookies.token;
+
+  if (!token) {
+    return {
+      statusCode: statusCodes.ok,
+      message: "No active session",
+      data: {
+        user: null,
+      },
+    };
+  }
+
+  try {
+    const decoded = jwt.verify(token, env.jwtSecret) as { userId: string };
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        address: true,
+        city: true,
+        country: true,
+        linkedinUrl: true,
+        githubUrl: true,
+        bio: true,
+        createdAt: true,
+      },
+    });
+
+    if (!user) {
+      res.clearCookie("token", {
+        httpOnly: false,
+        secure: false,
+        sameSite: "lax",
+      });
+      
+      return {
+        statusCode: statusCodes.ok,
+        message: "User not found",
+        data: {
+          user: null,
+        },
+      };
+    }
+
+    return {
+      statusCode: statusCodes.ok,
+      message: "User retrieved successfully",
+      data: {
+        user,
+      },
+    };
+  } catch (error) {
+    res.clearCookie("token", {
+      httpOnly: false,
+      secure: false,
+      sameSite: "lax",
+    });
+
+    return {
+      statusCode: statusCodes.ok,
+      message: "Invalid or expired token",
+      data: {
+        user: null,
+      },
+    };
+  }
+};
+
+export const resendOtp = async (req: Request) => {
+  const data = forgotPasswordSchema.parse(req.body);
+
+  const user = await prisma.user.findUnique({
+    where: { email: data.email },
+  });
+
+  if (!user) {
+    throw new customErrors(
+      statusCodes.notFound,
+      Message.userNotFound,
+      errorCodes.userNotFound
+    );
+  }
+
+  if (!user.isEmailVerified) {
+    throw new customErrors(
+      statusCodes.unauthorized,
+      Message.emailNotVerified,
+      errorCodes.emailNotVerified
+    );
+  }
+
+  const otp = generateOtp();
+  const hashedOtp = await bcrypt.hash(otp, 10);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      otpCode: hashedOtp,
+      otpExpiresAt: new Date(
+        Date.now() + 10 * 60 * 1000
+      ),
+    },
+  });
+
+  await sendEmailOtp(otp, user.email);
+
+  return {
+    statusCode: statusCodes.ok,
+    message: "A new OTP has been sent to your email.",
+    data: {
+      email: user.email,
+      otpExpiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    },
   };
 };
