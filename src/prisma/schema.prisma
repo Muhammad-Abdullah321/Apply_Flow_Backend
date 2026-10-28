@@ -52,11 +52,11 @@ model User {
   githubUrl   String?
   bio         String?
 
-  resumes     Resume[]
-  application Application[]
+  resumes     Resume[] @relation(onDelete: Cascade)
+  application Application[] @relation(onDelete: Cascade)
 
   createdAt DateTime @default(now())
-  updateAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 //Application model
