@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import bcrypt from 'bcrypt';
 import { prisma } from '../../config/database.config.js';
 import { statusCodes, Message, errorCodes } from '../../constants/response.constants.js';
 import customErrors from '../../utils/exception.utils.js';
@@ -32,7 +33,7 @@ export const getMyProfile = async (req: Request) => {
       bio: true,
       isEmailVerified: true,
       createdAt: true,
-      updateAt: true,
+      updatedAt: true,
     },
   });
 
@@ -96,7 +97,7 @@ export const updateMyProfile = async (req: Request) => {
       bio: true,
       isEmailVerified: true,
       createdAt: true,
-      updateAt: true,
+      updatedAt: true,
     },
   });
 
@@ -108,9 +109,12 @@ export const updateMyProfile = async (req: Request) => {
 };
 
 export const deleteMyAccount = async (req: Request) => {
+  console.log('[deleteMyAccount] Called for user:', req.user?.userId);
+  
   const userId = req.user?.userId;
 
   if (!userId) {
+    console.log('[deleteMyAccount] No userId found');
     throw new customErrors(
       statusCodes.unauthorized,
       Message.userNotFound,
@@ -125,6 +129,7 @@ export const deleteMyAccount = async (req: Request) => {
   });
 
   if (!existingUser) {
+    console.log('[deleteMyAccount] User not found in database');
     throw new customErrors(
       statusCodes.notFound,
       Message.userNotFound,
@@ -132,11 +137,47 @@ export const deleteMyAccount = async (req: Request) => {
     );
   }
 
-  await prisma.user.delete({
-    where: {
-      id: userId,
-    },
-  });
+  try {
+    // Delete all related data in correct order
+    // 1. Delete applications - this will cascade delete ApplicationStatusHistory
+    console.log('[deleteMyAccount] Deleting applications (this will cascade delete status history)');
+    await prisma.application.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+
+    console.log('[deleteMyAccount] Deleting resumes');
+    await prisma.resume.deleteMany({
+      where: {
+        userId: userId,
+      },
+    });
+
+    console.log('[deleteMyAccount] Deleting settings');
+    try {
+      await prisma.setting.deleteMany({
+        where: {
+          userId: userId,
+        },
+      });
+    } catch (settingError) {
+      console.log('[deleteMyAccount] Settings table might not exist, continuing anyway:', (settingError as any)?.code);
+      // Continue with deletion even if settings table doesn't exist
+    }
+
+    console.log('[deleteMyAccount] Deleting user');
+    await prisma.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+    
+    console.log('[deleteMyAccount] User deleted successfully');
+  } catch (error) {
+    console.error('[deleteMyAccount] Error during deletion:', error);
+    throw error;
+  }
 
   return {
     statusCode: statusCodes.ok,
@@ -166,8 +207,18 @@ export const changePassword = async (req: Request) => {
     );
   }
 
+  // Validate new password length
+  if (newPassword.length < 8) {
+    throw new customErrors(
+      statusCodes.badRequest,
+      "New password must be at least 8 characters long",
+      errorCodes.invalidInput
+    );
+  }
+
   const user = await prisma.user.findUnique({
     where: { id: userId },
+    select: { id: true, password: true },
   });
 
   if (!user) {
@@ -178,25 +229,24 @@ export const changePassword = async (req: Request) => {
     );
   }
 
-  // TODO: Add password comparison logic using bcrypt
-  // const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-  // if (!isPasswordValid) {
-  //   throw new customErrors(
-  //     statusCodes.unauthorized,
-  //     "Current password is incorrect",
-  //     errorCodes.invalidInput
-  //   );
-  // }
+  // Verify current password
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password || '');
+  if (!isPasswordValid) {
+    throw new customErrors(
+      statusCodes.unauthorized,
+      "Current password is incorrect",
+      errorCodes.unauthorized
+    );
+  }
 
-  // TODO: Add password validation (length, complexity)
-  // TODO: Hash new password using bcrypt
-  // const hashedPassword = await bcrypt.hash(newPassword, 10);
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
 
   // Update password
-  // await prisma.user.update({
-  //   where: { id: userId },
-  //   data: { password: hashedPassword },
-  // });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashedPassword },
+  });
 
   return {
     statusCode: statusCodes.ok,
