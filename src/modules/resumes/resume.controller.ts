@@ -43,7 +43,7 @@ export class ResumeController {
   uploadResume = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.userId;
-      const { name } = req.body;
+      const name = req.body?.name;
 
       if (!req.file) {
         throw new AppException('No file uploaded', 400);
